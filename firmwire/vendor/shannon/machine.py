@@ -1118,9 +1118,10 @@ r12: %08x     cpsr: %08x""" % (
         self.function_memory_access = {'r': [], 'w': []}
 
         self.disable_known_timers()
-        self.disable_write_to_logging_global()
-
-        self.disable_known_roadblocks()
+        if(self.is_memory_dump_enabled is False):
+            # if True, it is already set by restore_memory_dump
+            self.disable_write_to_logging_global()
+            self.disable_known_roadblocks()
 
 
         @self.qemu.pypanda.cb_phys_mem_before_write
