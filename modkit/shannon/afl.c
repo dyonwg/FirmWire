@@ -81,6 +81,16 @@ void task_main() {
 
     // this settles the baseband tasks
     MODEM_LOG("[+] Init sleep\n");
+
+    /*
+        To be safe, this pal_Sleep is disabled when 
+        the memory dumping is enabled. This is mainly
+        done because timer functionality is limited when
+        tracing memory accesses. 
+
+        This has no effect when memory dumping is not enabled.
+    */
+    
     if(!SYM_MEMORY_DUMP_ENABLED) pal_Sleep(200);
 
     if (!fuzz_single_setup()) {
@@ -90,6 +100,19 @@ void task_main() {
     MODEM_LOG("[+] Fuzzer init complete\n");
 
     MODEM_LOG("[+] Starting fork server\n");
+
+    /*
+        Memory tracing relies on basic block tracking, which is slow.
+        This slowdown causes many timers to kick in, yielding lots of
+        variance and sometimes even crashes. 
+        
+        This makes it difficult to assess the benefit of 
+        restoring a memory chunk from a dump. 
+        
+        Due to the above we disable timer ticks when tracing memory accesses.
+        This has no effect when running without memory access tracing.
+    */
+
     startForkserver(SYM_MEMORY_TRACING_ENABLED ^ 1);
 
     while (1) {
