@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import fcntl
+import gc
 
 import firmwire.vendor.shannon as shannon
 import firmwire.vendor.shannon.lte.soc
@@ -1065,6 +1066,9 @@ r12: %08x     cpsr: %08x""" % (
         count = 0
         if str(os.environ.get("ENABLE_MEMORY_TRACING", 0)) == '1':
             fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, 0)  # remove non-block
+            self.memory_tracing_enabled = 1
+        else:
+            self.memory_tracing_enabled = 0
 
         for (addr, size) in self.get_mem_dump_addrs():
             buf = self._shannon_memory_dump.get(addr, size)
@@ -1082,7 +1086,7 @@ r12: %08x     cpsr: %08x""" % (
             if count % 500 == 0:
                 log.debug(f"Restored {count} chunks from memory dump...")
         log.info(f"Memory dump recovery completed, restored {count} chunks")
-        self.memory_tracing_enabled = str(os.environ.get("ENABLE_MEMORY_TRACING", 0)) == '1'
+       
 
         self.disable_write_to_logging_global()
         self.disable_known_roadblocks()
@@ -1091,6 +1095,10 @@ r12: %08x     cpsr: %08x""" % (
         path = f"{self.get_memory_dump_file_path()}_metadata.txt"
         if(os.path.isfile(path) is False):
             self.collect_metadata(path)
+
+        # free memory        
+        del(self._shannon_memory_dump)
+        gc.collect()
     
     def collect_metadata(self, path):
         # init queue
