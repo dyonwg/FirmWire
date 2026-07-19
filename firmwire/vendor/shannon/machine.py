@@ -1066,18 +1066,10 @@ r12: %08x     cpsr: %08x""" % (
         if str(os.environ.get("ENABLE_MEMORY_TRACING", 0)) == '1':
             fcntl.fcntl(sys.stdout.fileno(), fcntl.F_SETFL, 0)  # remove non-block
 
-        value = int.from_bytes(self.qemu.pypanda.physical_memory_read(0x44490c40, 0x4), "little")
-        value2 = int.from_bytes(self.qemu.pypanda.physical_memory_read(0x4437e840, 0x4), "little")
-        print("before value 0x%x, value2 0x%x" % (value, value2))
-        # exit()
         for (addr, size) in self.get_mem_dump_addrs():
             buf = self._shannon_memory_dump.get(addr, size)
             if buf is None:
                 continue
-            if(size == 4):
-                val = int.from_bytes(buf, "little")
-                if(val >= 0x4437e800 and val <= 0x4437e860):
-                    print("Restored 0x%x from 0x%x" % (val, addr))
             self.qemu.pypanda.physical_memory_write(addr, buf)
             # Make sure that these are not considered as new memory accesses
             # by filtering out accesses that are written before the first read
@@ -1096,101 +1088,98 @@ r12: %08x     cpsr: %08x""" % (
         self.disable_known_roadblocks()
 
         # This should be called after the snapshot has been restored (if using a snapshot)
-        self.collect_metadata()
-    
-    def collect_metadata(self):
         path = f"{self.get_memory_dump_file_path()}_metadata.txt"
-        if(os.path.isfile(path)):
-            return
-        else:
-            # init queue
-            init_queues = self.symbol_table.lookup("SYM_INIT_QUEUS").address
-            init_queues_ptr = int.from_bytes(self.qemu.pypanda.physical_memory_read(init_queues, 4), "little")
+        if(os.path.isfile(path) is False):
+            self.collect_metadata(path)
+    
+    def collect_metadata(self, path):
+        # init queue
+        init_queues = self.symbol_table.lookup("SYM_INIT_QUEUS").address
+        init_queues_ptr = int.from_bytes(self.qemu.pypanda.physical_memory_read(init_queues, 4), "little")
 
-            init_queues_size = int.from_bytes(self.qemu.pypanda.physical_memory_read(init_queues_ptr-0x20+0x4, 4), "little")
-            self._shannon_memory_dump.metadata["SYM_INIT_QUEUS"] = [
-                {"start" : init_queues, "end": init_queues + 4},
-                {"start" : init_queues_ptr, "end" : init_queues_ptr+init_queues_size}
-            ]
+        init_queues_size = int.from_bytes(self.qemu.pypanda.physical_memory_read(init_queues_ptr-0x20+0x4, 4), "little")
+        self._shannon_memory_dump.metadata["SYM_INIT_QUEUS"] = [
+            {"start" : init_queues, "end": init_queues + 4},
+            {"start" : init_queues_ptr, "end" : init_queues_ptr+init_queues_size}
+        ]
 
-            #OS queue memory
-            queue_list = self.symbol_table.lookup("SYM_QUEUE_LIST").address
-            N = 0
-            j = 0
-            name_ptr =  self._shannon_memory_dump.restore_start
-            q_size = 20
-            while(name_ptr >=  self._shannon_memory_dump.restore_start and name_ptr <  self._shannon_memory_dump.restore_end):
-                q_memory = self.qemu.pypanda.physical_memory_read(queue_list + j, q_size)
-                name_ptr = int.from_bytes(q_memory[:4], "little")
-                j+=q_size
-                N+=1
+        #OS queue memory
+        queue_list = self.symbol_table.lookup("SYM_QUEUE_LIST").address
+        N = 0
+        j = 0
+        name_ptr =  self._shannon_memory_dump.restore_start
+        q_size = 20
+        while(name_ptr >=  self._shannon_memory_dump.restore_start and name_ptr <  self._shannon_memory_dump.restore_end):
+            q_memory = self.qemu.pypanda.physical_memory_read(queue_list + j, q_size)
+            name_ptr = int.from_bytes(q_memory[:4], "little")
+            j+=q_size
+            N+=1
 
-            self._shannon_memory_dump.metadata["SYM_QUEUE_LIST"] = [{"start" : queue_list, "end" : queue_list + N * q_size}]
+        self._shannon_memory_dump.metadata["SYM_QUEUE_LIST"] = [{"start" : queue_list, "end" : queue_list + N * q_size}]
 
-            # event memory
-            event_lst = self.symbol_table.lookup("SYM_EVENT_GROUP_LIST").address
-            event_size = 36 
-            event = self.qemu.read_memory(event_lst, 4)
-            self._shannon_memory_dump.metadata["SYM_EVENT_GROUP_LIST"] = [{"start" : event_lst, "end" : event_lst + 4}]
-            visited = []
-            while(event not in visited):
-                self._shannon_memory_dump.metadata["SYM_EVENT_GROUP_LIST"].append({"start" : event, "end" : event + event_size})
-                visited.append(event)
-                print("Adding event 0x%x 0x%x" % (event, event+event_size))
+        # event memory
+        event_lst = self.symbol_table.lookup("SYM_EVENT_GROUP_LIST").address
+        event_size = 36 
+        event = self.qemu.read_memory(event_lst, 4)
+        self._shannon_memory_dump.metadata["SYM_EVENT_GROUP_LIST"] = [{"start" : event_lst, "end" : event_lst + 4}]
+        visited = []
+        while(event not in visited):
+            self._shannon_memory_dump.metadata["SYM_EVENT_GROUP_LIST"].append({"start" : event, "end" : event + event_size})
+            visited.append(event)
 
-                event = self.qemu.read_memory(event, 4)
+            event = self.qemu.read_memory(event, 4)
 
-            start = self.modem_file.get_section("MAIN").load_address
-            end = self._shannon_memory_dump.heap.heap_metadata_start
+        start = self.modem_file.get_section("MAIN").load_address
+        end = self._shannon_memory_dump.heap.heap_metadata_start
 
-            # This may take some time
-            for addr in range(start, end, 4):
-                val = int.from_bytes(self.qemu.pypanda.physical_memory_read(addr, 4), "little")
-                if(val in visited):
-                    self._shannon_memory_dump.metadata["SYM_EVENT_GROUP_LIST"].append({"start" : addr, "end" : addr + 4})
+        # This may take some time
+        for addr in range(start, end, 4):
+            val = int.from_bytes(self.qemu.pypanda.physical_memory_read(addr, 4), "little")
+            if(val in visited):
+                self._shannon_memory_dump.metadata["SYM_EVENT_GROUP_LIST"].append({"start" : addr, "end" : addr + 4})
+        
+        # sched task memory
+        schedulable_task_list = self.symbol_table.lookup("SYM_SCHEDULABLE_TASK_LIST").address
+        # priority bits
+        self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"] = [{"start" : schedulable_task_list - (schedulable_task_list % 0x100), "end" : schedulable_task_list}]
+        task_size = 100 
+        stack_top_offset = 40
+        self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : schedulable_task_list, "end" : schedulable_task_list+ 1024 * 4})
+        self._shannon_memory_dump.metadata["STACK"] = []
+        collect_stack = True
+
+        for j in range(1, 1024, 2):
+            ptr = self.qemu.read_memory(schedulable_task_list + (j*4), 4)
+            t = self.qemu.pypanda.physical_memory_read(ptr, task_size)
             
-            # sched task memory
-            schedulable_task_list = self.symbol_table.lookup("SYM_SCHEDULABLE_TASK_LIST").address
-            # priority bits
-            self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"] = [{"start" : schedulable_task_list - (schedulable_task_list % 0x100), "end" : schedulable_task_list}]
-            task_size = 100 
-            stack_top_offset = 40
-            self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : schedulable_task_list, "end" : schedulable_task_list+ 1024 * 4})
-            self._shannon_memory_dump.metadata["STACK"] = []
-            collect_stack = True
+            stack_top = int.from_bytes(t[stack_top_offset:stack_top_offset+4], 'little')
+            stack_base = int.from_bytes(t[stack_top_offset+4:stack_top_offset+8], 'little')
 
-            for j in range(1, 1024, 2):
-                ptr = self.qemu.read_memory(schedulable_task_list + (j*4), 4)
-                t = self.qemu.pypanda.physical_memory_read(ptr, task_size)
+            if(ptr == 0):
+                continue
+                #break
+
+            self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : ptr, "end" : ptr + task_size})
+
+
+            if((stack_base == 0) or (stack_top == 0)):
+                collect_stack = False
+                continue
                 
-                stack_top = int.from_bytes(t[stack_top_offset:stack_top_offset+4], 'little')
-                stack_base = int.from_bytes(t[stack_top_offset+4:stack_top_offset+8], 'little')
+            self._shannon_memory_dump.metadata["STACK"].append({"start" : stack_base, "end" : stack_top})
 
-                if(ptr == 0):
-                    continue
-                    #break
+        
 
-                self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : ptr, "end" : ptr + task_size})
-
-
-                if((stack_base == 0) or (stack_top == 0)):
-                    collect_stack = False
-                    continue
-                    
-                self._shannon_memory_dump.metadata["STACK"].append({"start" : stack_base, "end" : stack_top})
-
-            
-
-            if(collect_stack is False):
-                # Apparently there was some task that did not have a task base
-                # so we cannot use this information
-                del(self._shannon_memory_dump.metadata["STACK"])
+        if(collect_stack is False):
+            # Apparently there was some task that did not have a task base
+            # so we cannot use this information
+            del(self._shannon_memory_dump.metadata["STACK"])
 
 
-            # Uncomment for debugging purposes
+        # Uncomment for debugging purposes
 
-            # self._shannon_memory_dump.print_metadata()
-            self._shannon_memory_dump.dump_metadata_to_file(path)
+        # self._shannon_memory_dump.print_metadata()
+        self._shannon_memory_dump.dump_metadata_to_file(path)
 
     # Overwriting large chunks can be a bit buggy, so write in chunks
 
@@ -1623,3 +1612,16 @@ r12: %08x     cpsr: %08x""" % (
             log.error("Cannot find symbol %s, not disabling it" % sym_name)
         else:
             self.qemu.pypanda.physical_memory_write(sym.address, bt)
+    
+    def post_snapshot_handler(self, snapshot_name):
+        # Collect at point of snapshot
+        path = f"{self.get_memory_dump_file_path()}_metadata.txt"
+        if(os.path.isfile(path)):
+
+            """ This depends on the emulator and not the (static) dump.
+            For example: The heap layout may differ, hence we want to
+            redo this for every snapshot """
+
+            log.warning(f"Removing previous metadata file at {path}")
+            os.remove(path)
+        self.collect_metadata(path)
