@@ -206,6 +206,11 @@ PATTERNS_CORTEX_R = {
             "0949 70b5 89?? 01fb00f6 ??f7???? 0446 e543"
         ]
     },
+    # "hw_MCUSleep": {
+    #     "pattern": [
+    #         "10b5 30b1 0128 0bd0 0228 0ad0 ??f7???? "
+    #     ]
+    # },
     "Nas_MacCheck":
     {
         "pattern": [
@@ -220,6 +225,12 @@ PATTERNS_CORTEX_R = {
         "pattern": [
             "25 6a 01 26 00 2d ?? d0 ?? 46 ???????? 94 f8 2d 10 ?? 4b 61 b1 01 29 01 d0 1d 46 1c e0"
         ],
+    },
+    "SYM_INIT_QUEUS": {
+        "pattern": [
+            "10 b5 40 f2 26 20 ?? ?? ?? 23 ?? ?? ?? ?? ?? ?? 60 60 01 20 ?? ?? ?? ?? 00 28 20 60 ?? ?? 62 68 00 21 00 2a 88 bf 00 22"
+        ],
+        "post_lookup": handlers.find_queues,
     },
 }
 
