@@ -6,7 +6,6 @@ import os
 import sys
 import time
 import fcntl
-import gc
 
 import firmwire.vendor.shannon as shannon
 import firmwire.vendor.shannon.lte.soc
@@ -1096,9 +1095,6 @@ r12: %08x     cpsr: %08x""" % (
         if(os.path.isfile(path) is False):
             self.collect_metadata(path)
 
-        # free memory        
-        del(self._shannon_memory_dump)
-        gc.collect()
     
     def collect_metadata(self, path):
         # init queue
