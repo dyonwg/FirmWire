@@ -1154,14 +1154,15 @@ r12: %08x     cpsr: %08x""" % (
 
         for j in range(1, 1024, 2):
             ptr = self.qemu.read_memory(schedulable_task_list + (j*4), 4)
+
+            if(ptr < start or ptr >= end):
+                            continue
+                            #break
+            
             t = self.qemu.pypanda.physical_memory_read(ptr, task_size)
             
             stack_top = int.from_bytes(t[stack_top_offset:stack_top_offset+4], 'little')
             stack_base = int.from_bytes(t[stack_top_offset+4:stack_top_offset+8], 'little')
-
-            if(ptr == 0):
-                continue
-                #break
 
             self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : ptr, "end" : ptr + task_size})
 
@@ -1181,7 +1182,7 @@ r12: %08x     cpsr: %08x""" % (
 
 
         # Uncomment for debugging purposes
-
+        log.info("Dumping metadata!!!")
         # self._shannon_memory_dump.print_metadata()
         self._shannon_memory_dump.dump_metadata_to_file(path)
 
