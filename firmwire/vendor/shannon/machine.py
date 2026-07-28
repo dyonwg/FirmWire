@@ -1145,7 +1145,7 @@ r12: %08x     cpsr: %08x""" % (
         # sched task memory
         schedulable_task_list = self.symbol_table.lookup("SYM_SCHEDULABLE_TASK_LIST").address
         # priority bits
-        self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"] = [{"start" : schedulable_task_list - (schedulable_task_list % 0x100), "end" : schedulable_task_list}]
+        self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"] = [{"start" : schedulable_task_list - (schedulable_task_list % 0x100) - 0x100, "end" : schedulable_task_list}]
         task_size = 100 
         stack_top_offset = 40
         self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : schedulable_task_list, "end" : schedulable_task_list+ 0x420 * 4})
