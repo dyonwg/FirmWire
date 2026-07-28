@@ -571,7 +571,36 @@ r12: %08x     cpsr: %08x""" % (
             task_struct_addr, self.task_layout, raw_bytes=task_struct_data
         )
 
-        nulltask.main_fn = bxlr | 0x1  # force thumb mode
+        new_main = bxlr
+
+        if(self.is_memory_dump_enabled and self.get_task_list()[idx].name == "UDATA"):
+            """ For S360 and S337AP images the UDATA task is disabled
+                , but the firmware is still able to send events to the
+                disabled UDATA task, crashing the baseband. In this case
+                fallback to the old implementation calling pal_Sleep """
+
+            sym = self.symbol_table.lookup("pal_Sleep")
+
+            if not sym:
+                log.error("Unable to disable task without pal_Sleep symbol")
+                return False
+
+            if self.nop_task_address is None:
+                self.nop_task_address = self.playground.begin + 0x4000
+                log.info("Creating NOP task at 0x%08x", self.nop_task_address)
+
+                pal_sleep = sym.address | 1
+                nop_bytes = self.qemu.assemble(
+                    NOP_TASK_SNIPPET.format(pal_sleep), addr=self.nop_task_address
+                )
+                self.qemu.write_memory(
+                    self.nop_task_address, 1, nop_bytes, len(nop_bytes), raw=True
+                )
+
+            new_main = self.nop_task_address
+
+
+        nulltask.main_fn = new_main | 0x1  # force thumb mode
         nulltask.pre_fn = 0  # zero disables this from being called
 
         self.qemu.wm(task_struct_addr, len(nulltask.data), nulltask.data, raw=True)
