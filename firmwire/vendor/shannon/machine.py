@@ -1133,8 +1133,8 @@ r12: %08x     cpsr: %08x""" % (
 
             event = self.qemu.read_memory(event, 4)
 
-        start = self.modem_file.get_section("MAIN").load_address
-        end = self._shannon_memory_dump.heap.heap_metadata_start
+        start = self._shannon_memory_dump.restore_start
+        end = self._shannon_memory_dump.restore_end
 
         # This may take some time
         for addr in range(start, end, 4):
@@ -1148,16 +1148,16 @@ r12: %08x     cpsr: %08x""" % (
         self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"] = [{"start" : schedulable_task_list - (schedulable_task_list % 0x100), "end" : schedulable_task_list}]
         task_size = 100 
         stack_top_offset = 40
-        self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : schedulable_task_list, "end" : schedulable_task_list+ 1024 * 4})
+        self._shannon_memory_dump.metadata["SYM_SCHEDULABLE_TASK_LIST"].append({"start" : schedulable_task_list, "end" : schedulable_task_list+ 0x420 * 4})
         self._shannon_memory_dump.metadata["STACK"] = []
         collect_stack = True
 
-        for j in range(1, 1024, 2):
+        for j in range(1, 0x420, 2):
             ptr = self.qemu.read_memory(schedulable_task_list + (j*4), 4)
 
             if(ptr < start or ptr >= end):
-                            continue
-                            #break
+                continue
+                #break
             
             t = self.qemu.pypanda.physical_memory_read(ptr, task_size)
             
