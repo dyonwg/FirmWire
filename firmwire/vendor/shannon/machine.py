@@ -1649,13 +1649,14 @@ r12: %08x     cpsr: %08x""" % (
     
     def post_snapshot_handler(self, snapshot_name):
         # Collect at point of snapshot
-        path = f"{self.get_memory_dump_file_path()}_metadata.txt"
-        if(os.path.isfile(path)):
+        if(self.is_memory_dump_enabled is True):
+            path = f"{self.get_memory_dump_file_path()}_metadata.txt"
+            if(os.path.isfile(path)):
 
-            """ This depends on the emulator and not the (static) dump.
-            For example: The heap layout may differ, hence we want to
-            redo this for every snapshot """
+                """ This depends on the emulator and not the (static) dump.
+                For example: The heap layout may differ, hence we want to
+                redo this for every snapshot """
 
-            log.warning(f"Removing previous metadata file at {path}")
-            os.remove(path)
-        self.collect_metadata(path)
+                log.warning(f"Removing previous metadata file at {path}")
+                os.remove(path)
+            self.collect_metadata(path)
