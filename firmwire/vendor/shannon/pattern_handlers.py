@@ -812,14 +812,14 @@ def find_msg_id_lte_pdcp_data_req(data, offset):
 
 
     # LTE_PDCP_DATA_REQ strings
-    locs = [l[0] for l in bp.findall(data)]
+    locs = [l[0] + offset for l in bp.findall(data)]
     llocs += locs
 
     # pointers to string
 
     for l in locs:
         bp_x = BinaryPattern("xref")
-        bp_x.from_str(struct.pack("I", l+offset))
+        bp_x.from_str(struct.pack("I", l))
         rez = bp_x.findall(data, maxresults=10)
         for r in rez:
             llocs.append(r[0])
