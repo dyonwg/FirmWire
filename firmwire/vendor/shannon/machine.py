@@ -1045,6 +1045,7 @@ r12: %08x     cpsr: %08x""" % (
             disable_list += ["UDATA"]  # Rabm timer NULL
             disable_list += ["SHM"]  # takes a ton of CPU time
             disable_list += ["SIM_SAP"]  # hangs when initing DS_SIM
+            disable_list += ["VSUP"] # hangs during boot
 
         task_id_by_name = {
             name: i for i, name in enumerate([t.name for t in self.get_task_list()])
