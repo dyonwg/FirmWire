@@ -85,9 +85,12 @@ class ShannonMemoryDump(DumpMapping):
                         "heap_metadata_start": hex(self.heap.heap_metadata_start),
                         "heap_start" : hex(self.heap.heap_start),
                         "heap_end" : hex(self.heap.heap_end),
-                        "filter" : [{k : hex(v)  for k,v in obj.items() } for obj in filtered]
+                        # "filter" : [{k : hex(v)  for k,v in obj.items() } for obj in filtered]
                     }
         
+        if(len(filtered) > 0):
+            metadata["filter"] = [{k : hex(v)  for k,v in obj.items() } for obj in filtered]
+
         if("STACK" in self.metadata):
             metadata["stack"] = [{k : hex(v)  for k,v in obj.items() } for obj in
                                  sorted(self.metadata["STACK"], key = lambda x: x["start"])]
