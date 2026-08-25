@@ -43,37 +43,6 @@ static uint32_t qid;
 static struct pal_event_group * group;
 
 
-int send_sib1Msg(){
-  struct qitem_lte_rrc2 *item = pal_MemAlloc(4, sizeof(struct qitem_lte_rrc2), __FILE__, __LINE__);
-  if (!item) {
-    MODEM_LOG("ALLOC FAILED");
-    return 0;
-  }
-
-  unsigned char buf[] = {
-    0x47, 0x40, 0x64, 0x04, 0xe1, 0x00, 0x07, 0x00, 0x19, 0xb0, 0x18, 0x14,
-    0x20, 0x90, 0x27, 0x00, 0x22, 0x19, 0x0a, 0x63, 0xa1, 0x2a, 0x5b, 0x1b,
-    0x40
-  };
-  unsigned int buf_len = 25;
-  unsigned int size = buf_len - 1;
-
-  char * asn_pl = pal_MemAlloc(4, size, __FILE__, __LINE__);
-  item->header.msgGroup = 0x0; //0x57f8;
-  item->header.size = sizeof(struct qitem_lte_rrc2) - sizeof(struct qitem_header);
-  item->header.op = MSG_ID_LTE_PDCP_DATA_IND;
-  item->pl_len = size; //
-  item->rb_id = 0x12;
-  item->pduSecCheckComp = 0x0;
-
-  memcpy(asn_pl, buf+1, size);
-  item->pl_ptr = asn_pl;
-  pal_MsgSendTo(0x13, item, 2);
-  pal_SmSetEvent((struct pal_event_group **)0x41807c48, 0x10);
-  return 1;
-}
-
-
 
 int fuzz_single_setup()
 {
@@ -134,37 +103,8 @@ void fuzz_single()
     else{
       //BCCH_DL_SCH
       item->rb_id = 0x12;
-      send_sib1Msg();
     }
 
-
-    // switch(buf[0] % 4){
-    //   case 0x4a:
-    //     //DL_DCCH
-    //     item->rb_id = 0x2;
-    //     break;
-    //   case 0x47:
-    //     //BCCH_DL_SCH
-    //     item->rb_id = 0x12;
-    //     break;
-    //   case 0x53:
-    //     //MCCH
-    //     item->rb_id = 0x16; //0x22;
-    //     break;
-    //   case 0x49:
-    //     //DL_CCCH
-    //     item->rb_id = 0x0;
-    //     break;
-    //   default:
-    //     //base on the first value, choose another see LteRrcAsnDecode
-    //     // item->rb_id = 0xff;
-    //     startWork(0, 0xffffffff); // memory range to collect coverage
-    //     doneWork(0);
-    //     return;
-    // }
-
-
-    // item->rb_id = 0x2; //0x2; //rb_id : 1, 2 -> SMC
   
     item->pduSecCheckComp = 0x0;
 
@@ -177,14 +117,10 @@ void fuzz_single()
     MODEM_LOG("[+] Setting Event\n");
     uart_dump_hex((uint8_t *) group, 4);
  
-    // pal_SmSetEvent((struct pal_event_group **)0x41807c48, 0x10);
     pal_SmSetEvent(&group, 0x10);
   
     MODEM_LOG("[+] Event set\n");
-    // for(int i = 0; i < 5000; i++) 
-    // pal_Sleep(40000);
-
-  
+    
     doneWork(0x0);
     MODEM_LOG("[+] WorkDone\n");
 }

@@ -1116,8 +1116,8 @@ r12: %08x     cpsr: %08x""" % (
                 log.debug(f"Restored {count} chunks from memory dump...")
         log.info(f"Memory dump recovery completed, restored {count} chunks")
        
-
-        self.disable_write_to_logging_global()
+        if(not self._fuzzing):
+            self.disable_write_to_logging_global()
         self.disable_known_roadblocks()
 
         # This should be called after the snapshot has been restored (if using a snapshot)
@@ -1288,7 +1288,8 @@ r12: %08x     cpsr: %08x""" % (
         self.disable_known_timers()
         if(not self.is_memory_dump_enabled()):
             # if True, it is already set by restore_memory_dump
-            self.disable_write_to_logging_global()
+            if(not self._fuzzing):
+                self.disable_write_to_logging_global()
             self.disable_known_roadblocks()
 
         
