@@ -789,7 +789,7 @@ r12: %08x     cpsr: %08x""" % (
             task_struct_addr, len(task_struct.data), task_struct.data, raw=True
         )
 
-        log.info(f"Injected!")
+        log.info(f"Injected! Task Struct at 0x{task_struct_addr:x}")
 
         return task.address
 
