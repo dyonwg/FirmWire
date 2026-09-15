@@ -403,4 +403,10 @@ PATTERNS_CORTEX_A = {
         "required": False,
         "soc_match": ["S5123"],
     },
+    "MSG_ID_LTE_PDCP_DATA_IND" : {
+        "lookup": lambda data, offset: 0x0,
+    },
+    "MSG_ID_LTE_PDCP_DATA_REQ" : {
+        "lookup": lambda data, offset: 0x0,
+    },
 }
