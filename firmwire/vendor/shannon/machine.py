@@ -789,7 +789,7 @@ r12: %08x     cpsr: %08x""" % (
             task_struct_addr, len(task_struct.data), task_struct.data, raw=True
         )
 
-        log.info(f"Injected! Task Struct at 0x{task_struct_addr:x}")
+        log.info(f"Injected!")
 
         return task.address
 
@@ -1644,7 +1644,6 @@ r12: %08x     cpsr: %08x""" % (
         # Busy Wait
         self.patch("pal_BusyWait1", b"\x70\x47")
         self.patch("pal_BusyWait2", b"\x70\x47")
-        # self.patch("hw_MCUSleep", b"\x70\x47")
 
     def disable_known_roadblocks(self):
         # These are purely optional, but are known to block execution

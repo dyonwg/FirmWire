@@ -54,10 +54,6 @@ class ShannonMemoryDump(DumpMapping):
             for val in vals:
                 idx = bisect.bisect_left(filtered, val["start"], key=lambda x: x["start"])
                 filtered.insert(idx, val)
-                # if(idx > 0 and idx < len(filtered)- 1):
-                #     print("Adding 0x%x-0x%x item before (0x%x-0x%x) item after (0x%x-0x%x)" % (val["start"], val["end"],
-                #                                                                            filtered[idx-1]["start"], filtered[idx-1]["end"],
-                #                                                                            filtered[idx+1]["start"], filtered[idx+1]["end"]))
                 
                 if(idx > 0):
                     if(filtered[idx]["start"] <= filtered[idx-1]["end"]):

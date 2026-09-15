@@ -206,11 +206,6 @@ PATTERNS_CORTEX_R = {
             "0949 70b5 89?? 01fb00f6 ??f7???? 0446 e543"
         ]
     },
-    # "hw_MCUSleep": {
-    #     "pattern": [
-    #         "10b5 30b1 0128 0bd0 0228 0ad0 ??f7???? "
-    #     ]
-    # },
     "Nas_MacCheck":
     {
         "pattern": [
